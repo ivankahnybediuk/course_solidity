@@ -4,70 +4,59 @@ pragma solidity >=0.7.0 <0.9.0;
 
 contract Voting {
     
-    // объявляем переменную с типом адрес (типы данных более подробно можно почитать здесь https://ru.it-brain.online/tutorial/solidity/solidity_types/
     address owner;
+    uint public party_id;
+    uint public voter_id;
     
-    // запускаем конструктор контракта для того чтобы при записи контракта в блокчейн изначально пределить переменную owner
-    
+ 
+    modifier isOwner() {
+        require(msg.sender == owner, "Caller is not owner");
+         _;
+      }
+     
+     modifier isAlreadyVotes() {
+        require(Voters[msg.sender] == 0, "You have already voted!");
+         _;
+      }
+      
     constructor() {
        owner = msg.sender;    
     }
-    
-    // Structure of Party 
-    // 
-    uint public party_id;
-    uint public voter_id;
-    // створюєм структуру даних 
-    // що це таке 
+
     struct party {
         string name;
+        uint id;
     }
-    
-    mapping(uint => party) public Party;
     
     struct candidat {
         string name;
-        uint party_id;
+        uint partyId;
         uint amount;
     }
+   
+    mapping(uint => party) public Party;
     
     mapping(uint => candidat) public Candidats;
     
-    mapping(address => uint) public Voters; //[(id, - address),(id, - address)] 
+    mapping(address => uint) public Voters; 
     
-    function addParty(string memory _name) public {
+    
+    function addParty(string memory _name) public isOwner{
         party_id += 1;
-        Party[party_id].name = _name;
+        Party[party_id] = party(_name, party_id);
     }
     
-    function addCandidat(string memory _name, uint _party_id) public {
-        Candidats[_party_id].name = _name;
+    function addCandidat(string memory _name, uint _party_id) public isOwner{
+        Candidats[_party_id] = candidat (_name, _party_id, 0);
     }
     
-    function voteProcess(uint _id_candidat) public {
-        voter_id += 1;
-        Voters[msg.sender] = voter_id;
-        // Для проверки голосовал человек или нет надо проверить id в метинге Voters у нас есть адресс (msg.sender) таким образом мы определяем с какого
-        адреса этот человек уже голосовал ну и int переменная по этому адресу не должна быть 0 
-        Voters[address] структуру можно представить так.
-        список.
-        Voters[address1] = 1
-        Voters[address2] = 2 
-        .......
-        Voters[address(n)] = n
-        mapping(address(индекс по которому мы вытягиваем данные) => uint (значение по этому индексу)) public Voters=Название;
-        проверяем
-        if (Voters[msg.sender] != 0)
+    function voteProcess(uint _id_candidat) public isAlreadyVotes{
+            voter_id += 1;
             Voters[msg.sender] = voter_id;
-        тоже и по кандидату
-         mapping(uint => candidat) public Candidats;
-         _id_candidat у нас есть
-         Candidats[_id_candidat].amount += 1;
-         таким образом мы добавляем голос в структуру кандидати которого мы выбрали по id
+            Candidats[_id_candidat].amount += 1;
     }
     
     /* Вибори мера версія 1.00
-
    1.  Партии структура (название, ID)
    2. Структура кандидатов (имя, партия (id), количество голосов) - мапинг структуры -> ID
        struct  candidat {
@@ -76,7 +65,6 @@ contract Voting {
                           Uint amount;
    }
    mapping(id -> candidat) Candidats;
-
    3. Мапинг (адресс -> id) [(address, id), (address, id)] voiting[address] = 0 !=0 уже проголосовал
    4. Функцию по добавлению партий
    5. Функцию по добавлению кандидатов в меры
